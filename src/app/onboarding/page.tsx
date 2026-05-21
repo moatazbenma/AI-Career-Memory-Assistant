@@ -1,32 +1,53 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Github, Loader2, CheckCircle2, Database, BrainCircuit } from "lucide-react"
+import { useAppStore } from "@/store/useAppStore"
+import { loginWithGitHub, fetchRepositories } from "@/services/api"
 
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
+  const [repoCount, setRepoCount] = useState(0)
+  
+  // Zustand Store
+  const setAuth = useAppStore(state => state.setAuth)
+  const token = useAppStore(state => state.token)
+  const setRepositories = useAppStore(state => state.setRepositories)
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     setLoading(true)
-    // Mock OAuth delay
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      // 1. Authenticate (Simulating GitHub OAuth redirect return)
+      const res = await loginWithGitHub("mock_code")
+      setAuth(res.token, res.user)
+      
+      // 2. Advance to next step
       setStep(2)
-    }, 1500)
+      
+      // 3. Kickoff Repo Fetching automatically
+      const repos = await fetchRepositories(res.token)
+      setRepositories(repos)
+      setRepoCount(repos.length)
+      
+    } catch (error) {
+      console.error("Auth failed", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     setLoading(true)
-    // Mock Repository Fetching and Analysis Delay
+    // Simulating deep analysis setup
     setTimeout(() => {
       setLoading(false)
       setStep(3)
-    }, 3000)
+    }, 2000)
   }
 
   const handleFinish = () => {
@@ -54,7 +75,7 @@ export default function OnboardingPage() {
             <CardFooter>
               <Button onClick={handleConnect} disabled={loading} className="w-full gap-2" size="lg">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Github className="h-5 w-5" />}
-                {loading ? "Connecting..." : "Authorize with GitHub"}
+                {loading ? "Connecting to GitHub..." : "Authorize with GitHub"}
               </Button>
             </CardFooter>
           </Card>
@@ -67,7 +88,9 @@ export default function OnboardingPage() {
                 <Database className="h-6 w-6 text-purple-400" />
               </div>
               <CardTitle className="text-2xl">Analyze Repositories</CardTitle>
-              <CardDescription>We found 14 repositories</CardDescription>
+              <CardDescription>
+                {repoCount === 0 ? "Fetching from GitHub..." : `Found ${repoCount} repositories`}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-6">
               <div className="rounded-lg border border-border bg-background/50 p-4 space-y-3">
@@ -77,13 +100,10 @@ export default function OnboardingPage() {
                     <div className="flex-1 h-4 bg-muted rounded skeleton" />
                   </div>
                 ))}
-                <div className="text-xs text-center text-muted-foreground pt-2">
-                  + 11 more repositories
-                </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleAnalyze} disabled={loading} variant="secondary" className="w-full gap-2" size="lg">
+              <Button onClick={handleAnalyze} disabled={loading || repoCount === 0} variant="secondary" className="w-full gap-2" size="lg">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <BrainCircuit className="h-5 w-5" />}
                 {loading ? "Extracting Memories..." : "Start AI Analysis"}
               </Button>
