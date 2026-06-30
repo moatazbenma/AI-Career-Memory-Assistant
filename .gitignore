@@ -1,0 +1,28 @@
+# Python
+Backend/venv/
+Backend/venv312/
+Backend/__pycache__/
+Backend/**/*.pyc
+
+# Django
+Backend/db.sqlite3
+Backend/staticfiles/
+Backend/logs/
+
+Backend/ml/model.pkl
+Backend/ml/label_encoder.pkl
+
+# Environment
+Backend/.env
+Frontend/.env
+
+# Node
+Frontend/node_modules/
+Frontend/dist/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
